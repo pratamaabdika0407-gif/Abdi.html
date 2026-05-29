@@ -1,0 +1,2401 @@
+<!-- Chosen Palette: Crimson Red, Slate Dark, Emerald Green, and Amber Gold -->
+<!-- Application Structure Plan: Aplikasi ini dirancang sebagai Single Page Application (SPA) berbasis mobile-first yang meniru tampilan aplikasi native di screenshot pengguna. Struktur terdiri dari header info akun & toggle Agen, kartu saldo interaktif, banner konsultasi promosi bertenaga Gemini AI, grid 8 layanan utama, serta riwayat transaksi real-time. Alur transaksi dikelola lewat modal popup yang interaktif untuk memudahkan pemahaman user tanpa pindah halaman. -->
+<!-- Visualization & Content Choices: 
+1. Source: Layanan Utama -> Goal: Akses Produk -> Method: Grid Responsif 4 Kolom -> Justification: Memastikan semua ikon muat dalam satu layar tanpa scroll vertikal yang panjang dan sepenuhnya dapat diklik secara interaktif.
+2. Source: QRIS Deposit/Pembayaran -> Goal: Scan QRIS -> Method: Modal interaktif baru yang menampilkan QRIS asli sesaat setelah memilih nominal -> Justification: Memberikan alur checkout belanja yang lebih realistis dan interaktif.
+3. Source: AI Assistant -> Goal: Edukasi Reseller -> Method: Chat panel interaktif dengan integrasi live Gemini API -> Justification: Memungkinkan pengguna berkonsultasi langsung tentang promosi & strategi bisnis. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semuanya Murah - PPOB, Reseller & AI Assistant</title>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==========================================================================
+           1. RESET & DASAR STYLING (CSS Murni Pengganti Tailwind)
+           ========================================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            display: flex;
+            justify-content: center;
+            align-items: start;
+            min-height: 100vh;
+            color: #1e293b;
+            padding: 0;
+        }
+
+        @media (min-width: 640px) {
+            body {
+                padding: 32px 0;
+            }
+        }
+
+        /* Container Utama HP */
+        .app-container {
+            width: 100%;
+            max-width: 440px;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding-bottom: 90px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (min-width: 640px) {
+            .app-container {
+                min-height: 850px;
+                border-radius: 40px;
+                border: 8px solid #1e293b;
+            }
+        }
+
+        /* Sembunyikan Scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* ==========================================================================
+           2. HEADER & ELEMEN UTAMA
+           ========================================================================== */
+        header {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            padding: 24px 20px 64px 20px;
+            border-bottom-left-radius: 32px;
+            border-bottom-right-radius: 32px;
+            color: #ffffff;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-box {
+            width: 38px;
+            height: 38px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #dc2626;
+            font-size: 18px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform: rotate(-8deg);
+        }
+
+        .logo-text h1 {
+            font-size: 15px;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        .logo-text p {
+            font-size: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+
+        .sandbox-badge {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sandbox-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #fbbf24;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+
+        /* Panel Agen */
+        .agent-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            background-color: rgba(153, 27, 27, 0.3);
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .agent-bar p {
+            font-size: 9px;
+            opacity: 0.8;
+        }
+
+        .agent-bar h2 {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .btn-agent-toggle {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-agent-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .btn-agent-toggle.active {
+            background-color: #fbbf24;
+            color: #0f172a;
+            border-color: #fbbf24;
+        }
+
+        /* ==========================================================================
+           3. KARTU SALDO INTERAKTIF (OVERLAP)
+           ========================================================================== */
+        .balance-card-wrapper {
+            padding: 0 20px;
+            margin-top: -40px;
+            position: relative;
+            z-index: 20;
+        }
+
+        .balance-card {
+            background-color: #ffffff;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .balance-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+
+        .balance-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .balance-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-top: 2px;
+        }
+
+        .balance-icon {
+            background-color: #fef2f2;
+            color: #dc2626;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .balance-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-action-primary {
+            background-color: #dc2626;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+        }
+
+        .btn-action-primary:hover {
+            background-color: #b91c1c;
+        }
+
+        .btn-action-secondary {
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+
+        .btn-action-secondary:hover {
+            background-color: #e2e8f0;
+        }
+
+        .btn-action:active {
+            transform: scale(0.97);
+        }
+
+        /* ==========================================================================
+           4. ASISTEN AI BANNER
+           ========================================================================== */
+        .ai-banner-section {
+            padding: 0 20px;
+            margin-top: 16px;
+        }
+
+        .ai-banner {
+            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+            border: 1px solid #c7d2fe;
+            border-radius: 24px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .ai-icon-small {
+            width: 24px;
+            height: 24px;
+            background-color: #4f46e5;
+            color: #ffffff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+        }
+
+        .ai-header h4 {
+            font-size: 12px;
+            font-weight: 700;
+            color: #312e81;
+        }
+
+        .ai-banner p {
+            font-size: 10px;
+            color: #3730a3;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .ai-quick-prompts {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .btn-prompt {
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #c7d2fe;
+            color: #312e81;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-prompt:hover {
+            background-color: #ffffff;
+        }
+
+        .ai-input-wrapper {
+            display: flex;
+            gap: 6px;
+        }
+
+        .ai-input-wrapper input {
+            flex: 1;
+            background-color: #ffffff;
+            border: 1px solid #c7d2fe;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: 10px;
+            color: #1e1b4b;
+            font-weight: 500;
+            outline: none;
+        }
+
+        .ai-input-wrapper input:focus {
+            border-color: #4f46e5;
+        }
+
+        .btn-send-mini {
+            background-color: #4f46e5;
+            color: #ffffff;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-send-mini:active {
+            transform: scale(0.9);
+        }
+
+        /* ==========================================================================
+           5. LAYANAN UTAMA GRID (CSS Grid Stabil)
+           ========================================================================== */
+        .services-section {
+            padding: 0 20px;
+            margin-top: 24px;
+        }
+
+        .services-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .services-header h3 {
+            font-size: 13px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .price-badge {
+            font-size: 8px;
+            font-weight: 700;
+            background-color: #cbd5e1;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .price-badge.agent {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        /* Grid Utama 4 Kolom */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .service-btn {
+            background-color: #ffffff;
+            border: 1px solid #f1f5f9;
+            border-radius: 20px;
+            padding: 10px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            border: none;
+        }
+
+        .service-btn:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .service-btn:active {
+            transform: scale(0.95);
+        }
+
+        .service-icon-circle {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        /* Tema Warna Ikon */
+        .icon-blue { background-color: #eff6ff; color: #3b82f6; }
+        .icon-emerald { background-color: #ecfdf5; color: #10b981; }
+        .icon-yellow { background-color: #fef9c3; color: #eab308; }
+        .icon-purple { background-color: #faf5ff; color: #a855f7; }
+        .icon-indigo { background-color: #eef2ff; color: #6366f1; }
+        .icon-rose { background-color: #fff1f2; color: #f43f5e; }
+        .icon-cyan { background-color: #ecfeff; color: #06b6d4; }
+
+        .service-btn p {
+            font-size: 9px;
+            font-weight: 700;
+            color: #475569;
+        }
+
+        .btn-bebas-nominal {
+            grid-column: span 2;
+            flex-direction: row;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px 16px;
+        }
+
+        .btn-bebas-nominal .text-left {
+            text-align: left;
+        }
+
+        .btn-bebas-nominal .text-left h5 {
+            font-size: 10px;
+            font-weight: 800;
+            color: #334155;
+            line-height: 1.1;
+        }
+
+        .btn-bebas-nominal .text-left p {
+            font-size: 8px;
+            font-weight: 500;
+            color: #94a3b8;
+        }
+
+        /* ==========================================================================
+           6. RIWAYAT TRANSAKSI FEED
+           ========================================================================== */
+        .history-section {
+            padding: 0 20px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .history-header h3 {
+            font-size: 13px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .btn-clear-history {
+            background: none;
+            border: none;
+            color: #dc2626;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-clear-history:hover {
+            text-decoration: underline;
+        }
+
+        .history-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 20px;
+            color: #94a3b8;
+        }
+
+        .empty-state i {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+        }
+
+        .empty-state p {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        /* Item Riwayat */
+        .history-item {
+            background-color: #ffffff;
+            padding: 12px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+            animation: popUp 0.3s ease-out;
+        }
+
+        .item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 70%;
+        }
+
+        .item-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .item-info h4 {
+            font-size: 11px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .item-info p {
+            font-size: 9px;
+            color: #94a3b8;
+            font-weight: 500;
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-info .item-note-label {
+            font-size: 8px;
+            color: #eab308;
+            background-color: #fef9c3;
+            padding: 1px 4px;
+            border-radius: 4px;
+            margin-top: 2px;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        .item-right {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .item-amount {
+            font-size: 12px;
+            font-weight: 700;
+            display: block;
+        }
+
+        .item-amount.deduct { color: #1e293b; }
+        .item-amount.add { color: #10b981; }
+
+        .item-badge {
+            font-size: 7px;
+            font-weight: 800;
+            background-color: #d1fae5;
+            color: #065f46;
+            padding: 1px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 3px;
+            text-transform: uppercase;
+        }
+
+        /* ==========================================================================
+           7. MODAL POPUP & TRANSISI
+           ========================================================================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: none;
+            justify-content: center;
+            align-items: flex-end;
+            padding: 0;
+        }
+
+        @media (min-width: 640px) {
+            .modal-overlay {
+                align-items: center;
+                padding: 16px;
+            }
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 440px;
+            border-top-left-radius: 28px;
+            border-top-right-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 85vh;
+        }
+
+        @media (min-width: 640px) {
+            .modal-content {
+                border-radius: 28px;
+                max-height: 90vh;
+                animation: popUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+        }
+
+        @keyframes popUp {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-content.slide-mode {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            0% { transform: translateY(100%); }
+            100% { transform: translateY(0); }
+        }
+
+        /* Modal Header */
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal-header-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .modal-header-text h3 {
+            font-size: 15px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .modal-header-text p {
+            font-size: 9px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-modal-close {
+            width: 32px;
+            height: 32px;
+            background-color: #f1f5f9;
+            border: none;
+            border-radius: 50%;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-modal-close:hover {
+            background-color: #e2e8f0;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e293b;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: #dc2626;
+        }
+
+        /* Grid Denominasi */
+        .denom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .denom-card {
+            background-color: #ffffff;
+            border: 2px solid #f1f5f9;
+            border-radius: 16px;
+            padding: 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 75px;
+            border: 2px solid #f1f5f9;
+        }
+
+        .denom-card:hover {
+            border-color: #dc2626;
+        }
+
+        .denom-card h4 {
+            font-size: 13px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .denom-card p {
+            font-size: 8px;
+            color: #94a3b8;
+            margin-top: auto;
+        }
+
+        .denom-card span {
+            font-size: 10px;
+            font-weight: 800;
+            color: #dc2626;
+        }
+
+        /* ==========================================================================
+           8. MODAL SPECIFIC CONTENT STYLES
+           ========================================================================== */
+        /* Topup QRIS Area */
+        .qris-box {
+            background-color: #f8fafc;
+            border: 2px solid #dc2626;
+            border-radius: 20px;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 200px;
+            margin: 0 auto 16px auto;
+            overflow: hidden;
+        }
+
+        .qris-box img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .qris-meta {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .qris-meta h4 {
+            font-size: 15px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .qris-meta p {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        /* Loader */
+        .loader-spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid #f1f5f9;
+            border-top: 4px solid #dc2626;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-modal {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .loader-modal h3 {
+            font-size: 14px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .loader-modal p {
+            font-size: 9px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        /* Struk/Receipt */
+        .receipt-top {
+            background-color: #10b981;
+            padding: 24px;
+            text-align: center;
+            color: #ffffff;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+        }
+
+        .receipt-top-circle {
+            width: 48px;
+            height: 48px;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin: 0 auto 8px auto;
+        }
+
+        .receipt-top h3 {
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .receipt-body {
+            background-color: #f8fafc;
+            padding: 20px;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            border-top: 2px dashed #cbd5e1;
+            position: relative;
+        }
+
+        .receipt-body::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background-image: radial-gradient(circle, #f8fafc 4px, transparent 5px);
+            background-size: 16px 8px;
+            background-repeat: repeat-x;
+        }
+
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-family: monospace;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .receipt-row span {
+            color: #94a3b8;
+        }
+
+        .receipt-row strong {
+            color: #1e293b;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-all;
+        }
+
+        .receipt-divider {
+            border-top: 1px solid #e2e8f0;
+            margin: 12px 0;
+        }
+
+        /* Chat Room AI */
+        .chat-room {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 12px;
+            height: 240px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .chat-bubble {
+            display: flex;
+            gap: 8px;
+            max-width: 85%;
+        }
+
+        .chat-bubble.bot {
+            align-self: flex-start;
+        }
+
+        .chat-bubble.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .chat-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+
+        .chat-avatar.bot { background-color: #e0e7ff; color: #4f46e5; }
+        .chat-avatar.user { background-color: #fef2f2; color: #dc2626; }
+
+        .chat-text {
+            padding: 10px 12px;
+            border-radius: 16px;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .chat-bubble.bot .chat-text {
+            background-color: #ffffff;
+            color: #334155;
+            border-top-left-radius: 0;
+            border: 1px solid #e2e8f0;
+        }
+
+        .chat-bubble.user .chat-text {
+            background-color: #4f46e5;
+            color: #ffffff;
+            border-top-right-radius: 0;
+        }
+
+        /* ==========================================================================
+           9. BOTTOM NAVIGATION BAR
+           ========================================================================== */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ffffff;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 12px 20px 12px;
+            z-index: 40;
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #94a3b8;
+            font-size: 9px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-item i {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .nav-item.active {
+            color: #dc2626;
+        }
+
+        /* Global Button Sizing */
+        .btn-full {
+            width: 100%;
+            padding: 14px;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 16px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-full-primary {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
+
+        .btn-full-primary:hover {
+            background-color: #b91c1c;
+        }
+
+        .btn-full-secondary {
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+
+        .btn-full-secondary:hover {
+            background-color: #e2e8f0;
+        }
+
+        .flex-row-gap {
+            display: flex;
+            gap: 10px;
+        }
+
+        .flex-row-gap button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Container Utama Aplikasi -->
+    <div class="app-container">
+        
+        <!-- Bagian Konten Utama -->
+        <div class="w-full">
+            
+            <!-- HEADER UTAMA MERAH -->
+            <header>
+                <div class="header-top">
+                    <div class="logo-area">
+                        <div class="logo-box">
+                            <i class="fa-solid fa-tags"></i>
+                        </div>
+                        <div class="logo-text">
+                            <h1>Semuanya murah .com</h1>
+                            <p>PPOB, Reseller & AI Assistant</p>
+                        </div>
+                    </div>
+                    <div class="sandbox-badge">
+                        <span class="sandbox-dot"></span> Sandbox
+                    </div>
+                </div>
+
+                <!-- Status Akun & Switch Agen -->
+                <div class="agent-bar">
+                    <div>
+                        <p>Selamat datang di sistem,</p>
+                        <h2 id="user-status-text">Pelanggan Umum</h2>
+                    </div>
+                    <button onclick="toggleAgentMode()" id="agent-toggle-btn" class="btn-agent-toggle">
+                        <i class="fa-solid fa-toggle-off mr-1.5"></i> Mode Agen: Off
+                    </button>
+                </div>
+            </header>
+
+            <!-- KARTU SALDO INTERAKTIF (OVERLAP EFFECT) -->
+            <section class="balance-card-wrapper">
+                <div class="balance-card">
+                    <div class="balance-info">
+                        <div>
+                            <p class="balance-label">Saldo Tersedia</p>
+                            <h3 id="app-balance-display" class="balance-value">Rp 150.000</h3>
+                            <span style="font-size: 8px; font-weight: bold; background-color: #d1fae5; color: #065f46; padding: 2.5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; text-transform: uppercase; border: 1px solid #a7f3d0;">
+                                <i class="fa-solid fa-circle-check animate-pulse"></i> Beli Langsung Aktif
+                            </span>
+                        </div>
+                        <div class="balance-icon">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                    </div>
+                    <!-- Aksi Saldo -->
+                    <div class="balance-actions">
+                        <button onclick="openModalTopup()" class="btn-action btn-action-primary">
+                            <i class="fa-solid fa-qrcode"></i> Isi Saldo
+                        </button>
+                        <button onclick="openModal('modal-withdraw')" class="btn-action btn-action-secondary">
+                            <i class="fa-solid fa-building-columns"></i> Tarik Saldo
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BANNER ASISTEN AI & KONSULTASI BISNIS -->
+            <section class="ai-banner-section">
+                <div class="ai-banner">
+                    <div class="ai-header">
+                        <div class="ai-icon-small">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <h4>Konsultasi Agen & Promosi AI ✨</h4>
+                    </div>
+                    <p>Tanyakan cara meningkatkan profit atau buat caption promosi otomatis sekali klik!</p>
+                    
+                    <!-- Quick Actions -->
+                    <div class="ai-quick-prompts">
+                        <button onclick="sendQuickAiQuery('Bagaimana cara menaikkan profit penjualan pulsa?')" class="btn-prompt">
+                            📈 Tips Profit
+                        </button>
+                        <button onclick="sendQuickAiQuery('Buatkan caption promo menarik untuk status WA jualan Token PLN')" class="btn-prompt">
+                            📱 Caption Promo
+                        </button>
+                    </div>
+
+                    <!-- Mini Input -->
+                    <div class="ai-input-wrapper">
+                        <input type="text" id="ai-mini-input" placeholder="Tanya asisten AI bisnis Anda...">
+                        <button onclick="submitAiQuery()" class="btn-send-mini">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GRID LAYANAN UTAMA -->
+            <section class="services-section">
+                <div class="services-header">
+                    <h3>Layanan Utama</h3>
+                    <span id="price-badge" class="price-badge">Harga Publik</span>
+                </div>
+                
+                <div class="services-grid">
+                    <!-- Pulsa -->
+                    <button onclick="openProductForm('Pulsa', 'fa-mobile-screen', 'blue')" class="service-btn">
+                        <div class="service-icon-circle icon-blue"><i class="fa-solid fa-mobile-screen"></i></div>
+                        <p>Pulsa</p>
+                    </button>
+                    <!-- Paket Data -->
+                    <button onclick="openProductForm('Paket Data', 'fa-wifi', 'emerald')" class="service-btn">
+                        <div class="service-icon-circle icon-emerald"><i class="fa-solid fa-wifi"></i></div>
+                        <p>Paket Data</p>
+                    </button>
+                    <!-- PLN Token -->
+                    <button onclick="openProductForm('PLN Token', 'fa-bolt', 'yellow')" class="service-btn">
+                        <div class="service-icon-circle icon-yellow"><i class="fa-solid fa-bolt"></i></div>
+                        <p>PLN Token</p>
+                    </button>
+                    <!-- E-Wallet -->
+                    <button onclick="openProductForm('E-Wallet', 'fa-wallet', 'purple')" class="service-btn">
+                        <div class="service-icon-circle icon-purple"><i class="fa-solid fa-wallet"></i></div>
+                        <p>E-Wallet</p>
+                    </button>
+                    <!-- Voucher Game -->
+                    <button onclick="openProductForm('Voucher Game', 'fa-gamepad', 'indigo')" class="service-btn">
+                        <div class="service-icon-circle icon-indigo"><i class="fa-solid fa-gamepad"></i></div>
+                        <p>Game</p>
+                    </button>
+                    <!-- Tagihan -->
+                    <button onclick="openProductForm('Tagihan Bulanan', 'fa-file-invoice-dollar', 'rose')" class="service-btn">
+                        <div class="service-icon-circle icon-rose"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                        <p>Tagihan</p>
+                    </button>
+                    <!-- Bebas Nominal -->
+                    <button onclick="openProductForm('Bebas Nominal', 'fa-money-bill-transfer', 'cyan')" class="service-btn btn-bebas-nominal">
+                        <div class="service-icon-circle icon-cyan"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                        <div class="text-left">
+                            <h5>BEBAS NOMINAL</h5>
+                            <p>Transfer/Bayar Bebas</p>
+                        </div>
+                    </button>
+                </div>
+            </section>
+
+            <!-- RIWAYAT TRANSAKSI TERAKHIR -->
+            <section class="history-section">
+                <div class="history-header">
+                    <h3>Riwayat Transaksi Terakhir</h3>
+                    <button onclick="clearAllTransactions()" class="btn-clear-history">Hapus Semua</button>
+                </div>
+                
+                <div id="history-feed" class="history-feed">
+                    <!-- Default Empty State -->
+                    <div id="empty-history-state" class="empty-state">
+                        <i class="fa-solid fa-receipt"></i>
+                        <p>Belum ada riwayat transaksi.</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- NAVIGASI MENU BAWAH -->
+        <nav class="bottom-nav">
+            <button onclick="changeTab('home')" class="nav-item active" id="tab-home">
+                <i class="fa-solid fa-house"></i>
+                <span>Beranda</span>
+            </button>
+            <button onclick="openModal('modal-ai-console')" class="nav-item" id="tab-assistant">
+                <i class="fa-solid fa-robot"></i>
+                <span>Asisten AI</span>
+            </button>
+            <button onclick="openModal('modal-settings')" class="nav-item" id="tab-settings">
+                <i class="fa-solid fa-gears"></i>
+                <span>Konfigurasi</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- ================= MODALS & POPUPS ================= -->
+
+    <!-- MODAL 1: FORM TRANSAKSI PRODUK -->
+    <div id="modal-product" class="modal-overlay">
+        <div class="modal-content slide-mode">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <div id="product-modal-icon-container" class="modal-header-icon">
+                        <i id="product-modal-icon" class="fa-solid"></i>
+                    </div>
+                    <div class="modal-header-text">
+                        <h3 id="product-modal-title">Nama Produk</h3>
+                        <p>Transaksi Otomatis</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-product')" class="btn-modal-close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Dynamic Game Selector (Hanya Muncul untuk Voucher Game) -->
+            <div id="game-selector-container" class="form-group" style="display: none;">
+                <label>Pilih Game Online</label>
+                <select id="game-type-select" onchange="changeGameType()">
+                    <option value="mlbb">Mobile Legends (MLBB)</option>
+                    <option value="ff">Free Fire (FF)</option>
+                    <option value="pubg">PUBG Mobile</option>
+                    <option value="hok">Honor of Kings (HOK)</option>
+                    <option value="genshin">Genshin Impact</option>
+                    <option value="roblox">Roblox</option>
+                </select>
+            </div>
+
+            <!-- Dynamic Inputs depending on game / product selection -->
+            <div class="form-group">
+                <label id="target-account-label">Nomor Tujuan / ID Pelanggan</label>
+                <input type="text" id="target-account" placeholder="Masukkan nomor HP atau ID">
+                
+                <!-- BOX DETEKSI PINTAR (OPERATOR SELULER & NAMA PLN) -->
+                <div id="detection-info-container" style="margin-top: 10px; display: none;"></div>
+            </div>
+
+            <!-- Custom PLN Name Input -->
+            <div id="pln-custom-name-container" class="form-group" style="display: none;">
+                <label>Nama Pelanggan PLN (Bisa Diedit Sesuai Pembeli)</label>
+                <input type="text" id="pln-custom-name-input" placeholder="Ketik nama pembeli untuk divalidasi...">
+            </div>
+
+            <!-- Tambahan Kolom Catatan Pembelian -->
+            <div class="form-group">
+                <label>Catatan Pembelian (Optional)</label>
+                <input type="text" id="target-note" placeholder="Contoh: Beli Pulsa Mas Abdi, Token Kantor, dll.">
+            </div>
+            
+            <div id="standard-nominal-selector">
+                <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">Pilih Denom / Nominal</label>
+                <!-- Area scrollable jika nominal sangat banyak -->
+                <div class="no-scrollbar" style="max-height: 250px; overflow-y: auto; padding-right: 4px;">
+                    <div class="denom-grid" id="product-denom-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="custom-nominal-selector" style="display: none;">
+                <div class="form-group">
+                    <label>Jumlah Pembayaran Bebas (Min Rp 5.000)</label>
+                    <input type="number" id="custom-amount-input" placeholder="Contoh: 75000">
+                </div>
+                <button onclick="requestCustomQrisPayment()" class="btn-full btn-full-primary" style="margin-top: 16px;">
+                    Proses Transaksi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: PILIHAN ISI SALDO (QRIS MANJERIAL) -->
+    <div id="modal-topup" class="modal-overlay">
+        <div class="modal-content">
+            <div id="topup-step-selection">
+                <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; text-align: center; margin-bottom: 6px;">Top Up Saldo</h3>
+                <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-bottom: 20px; line-height: 1.4;">Pilih jumlah isi saldo instan menggunakan QRIS otomatis.</p>
+                
+                <div class="denom-grid" style="margin-bottom: 20px;">
+                    <button onclick="selectTopupAmount(20000)" class="denom-card" style="text-align: center; justify-content: center; height: 50px;"><h4>20 Ribu</h4></button>
+                    <button onclick="selectTopupAmount(50000)" class="denom-card" style="text-align: center; justify-content: center; height: 50px;"><h4>50 Ribu</h4></button>
+                    <button onclick="selectTopupAmount(100000)" class="denom-card" style="text-align: center; justify-content: center; height: 50px;"><h4>100 Ribu</h4></button>
+                    <button onclick="selectTopupAmount(250000)" class="denom-card" style="text-align: center; justify-content: center; height: 50px;"><h4>250 Ribu</h4></button>
+                    <button onclick="selectTopupAmount(500000)" class="denom-card" style="text-align: center; justify-content: center; height: 50px;"><h4>500 Ribu</h4></button>
+                    <button onclick="selectTopupAmount(1000000)" class="denom-card" style="text-align: center; justify-content: center; height: 50px;"><h4>1 Juta</h4></button>
+                </div>
+                <button onclick="closeModal('modal-topup')" class="btn-full btn-full-secondary">Batalkan</button>
+            </div>
+
+            <!-- Tampilan QRIS asli -->
+            <div id="topup-step-qris" style="display: none;">
+                <div class="qris-meta">
+                    <h4>Selesaikan Pembayaran</h4>
+                    <p>Total tagihan: <span id="qris-target-price" style="font-weight: 800; color: #dc2626;"></span></p>
+                </div>
+                <div class="qris-box">
+                    <img src="https://i.imgur.com/JObJXbr.jpeg" alt="QRIS Code">
+                </div>
+                <div class="flex-row-gap">
+                    <button onclick="resetTopupFlow()" class="btn-full btn-full-secondary">Kembali</button>
+                    <button onclick="confirmQrisDeposit()" class="btn-full btn-full-primary">Saya Sudah Bayar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL BARU: KODE QRIS UNTUK CHECKOUT TRANSAKSI LANGSUNG -->
+    <div id="modal-pay-qris" class="modal-overlay">
+        <div class="modal-content">
+            <div class="qris-meta">
+                <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; text-align: center; margin-bottom: 4px;">Pindai QRIS Untuk Membeli</h3>
+                <p style="font-size: 10px; color: #94a3b8; text-align: center;">Silakan selesaikan pembayaran agar produk otomatis kami proses.</p>
+            </div>
+            
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px; margin: 16px 0; display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                    <span style="color: #64748b;">Produk:</span>
+                    <strong id="pay-qris-product" style="color: #1e293b; text-align: right;">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                    <span style="color: #64748b;">Tujuan:</span>
+                    <strong id="pay-qris-target" style="color: #1e293b; text-align: right; word-break: break-all; max-width: 60%;">-</strong>
+                </div>
+                <div id="pay-qris-pln-row" style="display: none; justify-content: space-between; font-size: 11px;">
+                    <span style="color: #64748b;">Nama Pelanggan:</span>
+                    <strong id="pay-qris-pln-name" style="color: #059669; text-align: right;">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; border-top: 1px dashed #cbd5e1; pt-6; margin-top: 4px; padding-top: 6px;">
+                    <span style="color: #1e293b; font-weight: bold;">Total Bayar:</span>
+                    <strong id="pay-qris-price" style="color: #dc2626; font-size: 13px; font-weight: 800;">-</strong>
+                </div>
+            </div>
+
+            <!-- Gambar QRIS khusus -->
+            <div class="qris-box">
+                <img src="https://i.imgur.com/JObJXbr.jpeg" alt="QRIS Code">
+            </div>
+
+            <div class="flex-row-gap">
+                <button onclick="closeModal('modal-pay-qris')" class="btn-full btn-full-secondary">Batal</button>
+                <button onclick="executeProductPayment()" class="btn-full btn-full-primary">Saya Sudah Bayar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: PENARIKAN DANA (WITHDRAW) -->
+    <div id="modal-withdraw" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin-bottom: 4px;">Tarik Saldo</h3>
+            <p style="font-size: 10px; color: #94a3b8; margin-bottom: 20px; line-height: 1.4;">Kirim pendapatan/saldo Anda ke Bank maupun Dompet Digital.</p>
+            
+            <div class="form-group">
+                <label>Tipe Penarikan</label>
+                <select id="withdraw-type" onchange="adaptWithdrawDestinations()">
+                    <option value="bank">Transfer Bank</option>
+                    <option value="ewallet">Dompet E-Wallet</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Pilih Bank / Dompet</label>
+                <select id="withdraw-destination">
+                    <!-- Filled by JS -->
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Nomor Rekening / No. HP</label>
+                <input type="text" id="withdraw-account-num" placeholder="Masukkan nomor rekening/HP">
+            </div>
+
+            <div class="form-group">
+                <label>Jumlah Penarikan (Min Rp 10.000)</label>
+                <input type="number" id="withdraw-amount-num" placeholder="Jumlah penarikan">
+            </div>
+
+            <div class="flex-row-gap" style="margin-top: 24px;">
+                <button onclick="closeModal('modal-withdraw')" class="btn-full btn-full-secondary">Batalkan</button>
+                <button onclick="executeWithdrawAction()" class="btn-full btn-full-primary">Tarik Dana</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: ASISTEN AI CONSOLE (CHAT ROOM) -->
+    <div id="modal-ai-console" class="modal-overlay">
+        <div class="modal-content slide-mode" style="max-height: 85vh;">
+            <div class="modal-header" style="margin-bottom: 16px;">
+                <div class="modal-header-left">
+                    <div class="modal-header-icon icon-indigo">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="modal-header-text">
+                        <h3>Asisten AI Bisnis</h3>
+                        <p style="color: #4f46e5;">Gemini Terintegrasi</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-ai-console')" class="btn-modal-close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Chat Room -->
+            <div id="ai-chat-feed" class="chat-room no-scrollbar">
+                <div class="chat-bubble bot">
+                    <div class="chat-avatar bot"><i class="fa-solid fa-robot"></i></div>
+                    <div class="chat-text">
+                        Halo! Saya asisten pintar bisnis Anda. Butuh ide promosi, strategi meningkatkan agen, atau menghitung laba jualan? Tanyakan saja!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input area -->
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="ai-chat-input" placeholder="Tulis pertanyaan bisnis Anda..." style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px 16px; font-size: 11px; font-weight: 500; outline: none;">
+                <button onclick="submitConsoleAiQuery()" class="btn-send-mini" style="width: 44px; height: 44px; background-color: #4f46e5;">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: KONFIGURASI / SETTINGS -->
+    <div id="modal-settings" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin-bottom: 4px;">Setelan Sistem</h3>
+            <p style="font-size: 10px; color: #94a3b8; margin-bottom: 20px; line-height: 1.4;">Atur preferensi sistem atau pasang API Key Gemini milik Anda.</p>
+            
+            <div class="form-group">
+                <label>Kunci API Gemini (Opsional)</label>
+                <input type="password" id="custom-api-key-input" placeholder="AI-zaSy...">
+            </div>
+            
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px; margin-bottom: 24px;">
+                <p style="font-size: 9px; color: #64748b; line-height: 1.5;">Secara default, jika dikosongkan, asisten akan berjalan menggunakan simulasi database untuk kelancaran demo jualan Anda.</p>
+            </div>
+
+            <button onclick="saveConfigurations()" class="btn-full btn-full-primary">Simpan Perubahan</button>
+        </div>
+    </div>
+
+    <!-- MODAL PROCESSING (LOADER) -->
+    <div id="modal-processing" class="modal-overlay" style="align-items: center; padding: 16px;">
+        <div class="modal-content" style="max-width: 240px; border-radius: 28px; padding: 24px;">
+            <div class="loader-modal">
+                <div class="loader-spinner"></div>
+                <h3 id="processing-title">Sistem Memproses...</h3>
+                <p>Otomatisasi memproses permintaan Anda.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL STRUK SUKSES (RECEIPT) -->
+    <div id="modal-receipt" class="modal-overlay" style="align-items: center; padding: 16px;">
+        <div class="modal-content" style="max-width: 340px; border-radius: 28px; padding: 0; overflow: hidden;">
+            <div class="receipt-top">
+                <div class="receipt-top-circle">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 id="success-title">Transaksi Berhasil!</h3>
+            </div>
+            
+            <div class="receipt-body">
+                <div class="receipt-row"><span>Produk</span><strong id="rec-service"></strong></div>
+                <div class="receipt-row"><span>No. Tujuan</span><strong id="rec-target"></strong></div>
+                <div class="receipt-row"><span>Nama Pelanggan</span><strong id="rec-pln-name" style="color:#059669; display:none;">-</strong></div>
+                <div class="receipt-row"><span>Tarif/Daya</span><strong id="rec-pln-power" style="display:none;">-</strong></div>
+                <div class="receipt-row"><span>Catatan Pembeli</span><strong id="rec-note">-</strong></div>
+                <div class="receipt-row"><span>Nomor SN</span><strong id="rec-sn"></strong></div>
+                <div class="receipt-row"><span>Waktu</span><strong id="rec-time"></strong></div>
+                <div class="receipt-divider"></div>
+                <div class="receipt-row"><span style="font-size: 11px; font-weight: bold; color: #475569;">Total Biaya</span><strong id="rec-price" style="font-size: 12px; font-weight: 800; color: #dc2626;"></strong></div>
+                <button onclick="closeModal('modal-receipt')" class="btn-full btn-full-primary" style="margin-top: 20px;">Selesai</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- STATE MANAGEMENT ---
+        let balance = 150000;
+        let isAgentMode = false;
+        let selectedTopupAmount = 0;
+        let currentModalProduct = '';
+        let systemApiKey = '';
+        let currentPLNCustomer = null; // Menyimpan data pelanggan PLN terdeteksi
+        let plnTimeout = null;
+        
+        // State transaksi yang sedang ditangguhkan menunggu scan QRIS
+        let pendingTransaction = null; 
+
+        const formatRupiah = (num) => 'Rp ' + num.toLocaleString('id-ID');
+
+        // Init UI Saldo
+        document.getElementById('app-balance-display').innerText = formatRupiah(balance);
+        adaptWithdrawDestinations();
+
+        // --- TOGGLE MODE AGEN ---
+        function toggleAgentMode() {
+            isAgentMode = !isAgentMode;
+            const toggleBtn = document.getElementById('agent-toggle-btn');
+            const userStatus = document.getElementById('user-status-text');
+            const priceBadge = document.getElementById('price-badge');
+
+            if (isAgentMode) {
+                toggleBtn.innerHTML = `<i class="fa-solid fa-toggle-on mr-1.5" style="color: #fbbf24;"></i> Mode Agen: On`;
+                toggleBtn.className = "btn-agent-toggle active";
+                userStatus.innerText = "Mitra Agen Pro";
+                priceBadge.innerText = "Harga Agen Pro";
+                priceBadge.className = "price-badge agent";
+                alert("Mode Agen diaktifkan! Anda mendapatkan harga modal terendah reseller.");
+            } else {
+                toggleBtn.innerHTML = `<i class="fa-solid fa-toggle-off mr-1.5"></i> Mode Agen: Off`;
+                toggleBtn.className = "btn-agent-toggle";
+                userStatus.innerText = "Pelanggan Umum";
+                priceBadge.innerText = "Harga Publik";
+                priceBadge.className = "price-badge";
+            }
+            
+            // Re-render denoms jika modal product sedang terbuka
+            if (document.getElementById('modal-product').classList.contains('active') && currentModalProduct !== 'Bebas Nominal') {
+                renderDenoms(currentModalProduct);
+            }
+        }
+
+        // --- MANAJEMEN MODAL ---
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add('active');
+            }
+        }
+
+        function openModalTopup() {
+            resetTopupFlow();
+            openModal('modal-topup');
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('active');
+            }
+        }
+
+        // --- FORMAT NAMA DENOMINASI ---
+        function formatDenomName(denom) {
+            if (denom >= 1000000) {
+                return (denom / 1000000) + " Juta";
+            } else if (denom >= 1000) {
+                return (denom / 1000) + " Ribu";
+            } else {
+                return denom + " Rupiah";
+            }
+        }
+
+        // --- DETEKSI OPERATOR SELULER OTOMATIS ---
+        function detectOperator(number) {
+            if (!number) return null;
+            let clean = number.replace(/[^0-9]/g, '');
+            if (clean.startsWith('62')) {
+                clean = '0' + clean.slice(2);
+            }
+            if (clean.length < 4) return null;
+            const prefix = clean.substring(0, 4);
+
+            const operators = {
+                'Telkomsel': ['0811', '0812', '0813', '0821', '0822', '0852', '0853', '0823', '0851'],
+                'Indosat Ooredoo': ['0814', '0815', '0816', '0855', '0856', '0857', '0858'],
+                'XL Axiata': ['0817', '0818', '0819', '0859', '0877', '0878'],
+                'Axis': ['0838', '0831', '0832'],
+                'Tri (3)': ['0895', '0896', '0897', '0898', '0899'],
+                'Smartfren': ['0881', '0882', '0883', '0884', '0885', '0886', '0887', '0888', '0889']
+            };
+
+            for (let op in operators) {
+                if (operators[op].includes(prefix)) {
+                    return op;
+                }
+            }
+            return null;
+        }
+
+        // --- DETEKSI NAMA PELANGGAN PLN (DATABASE SIMULASI DINAMIS) ---
+        function getPLNDetails(idPel) {
+            const customNameInput = document.getElementById('pln-custom-name-input').value.trim();
+            const names = ["BUDI SANTOSO", "SITI AMINAH", "AHMAD SOBARI", "HERI SETIAWAN", "SULISTYOWATI", "MUHAMMAD IRFAN", "EKO PRASETYO", "DEWI LESTARI"];
+            const power = ["R1 / 450 VA", "R1 / 900 VA", "R1M / 1300 VA", "R1 / 2200 VA", "I2 / 3500 VA"];
+            
+            let sum = 0;
+            for (let i = 0; i < idPel.length; i++) {
+                sum += parseInt(idPel[i]) || 0;
+            }
+            
+            const nameSelected = customNameInput !== "" ? customNameInput.toUpperCase() : names[sum % names.length];
+            const powerSelected = power[sum % power.length];
+            
+            return { name: nameSelected, power: powerSelected };
+        }
+
+        // Listener untuk real-time update saat user mengetik nama kustom PLN
+        document.getElementById('pln-custom-name-input').addEventListener('input', function() {
+            triggerPlnDetection();
+        });
+
+        document.getElementById('target-account').addEventListener('input', function() {
+            triggerPlnDetection();
+        });
+
+        function triggerPlnDetection() {
+            const val = document.getElementById('target-account').value.trim();
+            const container = document.getElementById('detection-info-container');
+            
+            if (currentModalProduct === 'Pulsa' || currentModalProduct === 'Paket Data' || currentModalProduct === 'E-Wallet') {
+                const op = detectOperator(val);
+                if (op) {
+                    container.style.display = 'block';
+                    let opColor = '#3b82f6'; 
+                    if (op === 'Telkomsel') opColor = '#dc2626';
+                    if (op === 'Indosat Ooredoo') opColor = '#f97316';
+                    if (op === 'XL Axiata') opColor = '#2563eb';
+                    if (op === 'Axis') opColor = '#a855f7';
+                    if (op === 'Tri (3)') opColor = '#ec4899';
+                    if (op === 'Smartfren') opColor = '#f43f5e';
+                    
+                    container.innerHTML = `
+                        <div style="background-color: #f1f5f9; padding: 10px 14px; border-radius: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid #e2e8f0; animation: popUp 0.2s ease;">
+                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${opColor};"></span>
+                            <span style="font-size: 11px; font-weight: 700; color: #334155;">Operator Terdeteksi: <strong style="color: ${opColor};">${op}</strong></span>
+                        </div>
+                    `;
+                } else {
+                    container.style.display = 'none';
+                }
+            } else if (currentModalProduct === 'PLN Token' || currentModalProduct === 'Tagihan Bulanan') {
+                const cleanVal = val.replace(/[^0-9]/g, '');
+                if (cleanVal.length >= 11) {
+                    container.style.display = 'block';
+                    container.innerHTML = `
+                        <div style="background-color: #fef9c3; padding: 10px 14px; border-radius: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid #fef08a;">
+                            <i class="fa-solid fa-circle-notch fa-spin" style="color: #ca8a04;"></i>
+                            <span style="font-size: 11px; font-weight: 700; color: #854d0e;">Memeriksa meteran pelanggan PLN...</span>
+                        </div>
+                    `;
+                    
+                    if (plnTimeout) clearTimeout(plnTimeout);
+                    plnTimeout = setTimeout(() => {
+                        const pln = getPLNDetails(cleanVal);
+                        currentPLNCustomer = pln;
+                        container.innerHTML = `
+                            <div style="background-color: #ecfdf5; padding: 12px 14px; border-radius: 14px; border: 1px solid #a7f3d0; display: flex; flex-direction: column; gap: 4px; animation: popUp 0.2s ease;">
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                                    <i class="fa-solid fa-circle-check" style="color: #059669; font-size: 13px;"></i>
+                                    <span style="font-size: 10px; font-weight: 800; color: #065f46; text-transform: uppercase;">Pelanggan Terdeteksi</span>
+                                </div>
+                                <div style="font-size: 11px; font-weight: 700; color: #047857;">
+                                    <p style="margin-bottom: 2px;">Nama: <strong style="color: #065f46; font-size: 12px;">${pln.name}</strong></p>
+                                    <p>Tarif/Daya: <span style="color: #1e293b;">${pln.power}</span></p>
+                                </div>
+                            </div>
+                        `;
+                    }, 400);
+                } else {
+                    container.style.display = 'none';
+                    currentPLNCustomer = null;
+                }
+            } else {
+                container.style.display = 'none';
+                currentPLNCustomer = null;
+            }
+        }
+
+        // --- DATA GAME ONLINE & DENOMINASI LENGKAP ---
+        const gameDenominations = {
+            mlbb: [
+                { denom: "36 Diamonds", basePrice: 10000 },
+                { denom: "85 Diamonds", basePrice: 20000 },
+                { denom: "220 Diamonds", basePrice: 50000 },
+                { denom: "366 Diamonds", basePrice: 80000 },
+                { denom: "568 Diamonds", basePrice: 120000 },
+                { denom: "875 Diamonds", basePrice: 190000 },
+                { denom: "2010 Diamonds", basePrice: 430000 },
+                { denom: "4830 Diamonds", basePrice: 1000000 }
+            ],
+            ff: [
+                { denom: "70 Diamonds", basePrice: 10000 },
+                { denom: "140 Diamonds", basePrice: 18000 },
+                { denom: "355 Diamonds", basePrice: 45000 },
+                { denom: "720 Diamonds", basePrice: 85000 },
+                { denom: "1440 Diamonds", basePrice: 170000 },
+                { denom: "2000 Diamonds", basePrice: 230000 },
+                { denom: "7290 Diamonds", basePrice: 800000 }
+            ],
+            pubg: [
+                { denom: "60 UC", basePrice: 13000 },
+                { denom: "325 UC", basePrice: 65000 },
+                { denom: "660 UC", basePrice: 130000 },
+                { denom: "1800 UC", basePrice: 320000 },
+                { denom: "3850 UC", basePrice: 650000 },
+                { denom: "8100 UC", basePrice: 1300000 }
+            ],
+            hok: [
+                { denom: "80 Tokens", basePrice: 15000 },
+                { denom: "240 Tokens", basePrice: 42000 },
+                { denom: "480 Tokens", basePrice: 80000 },
+                { denom: "1200 Tokens", basePrice: 200000 },
+                { denom: "2400 Tokens", basePrice: 380000 },
+                { denom: "4800 Tokens", basePrice: 750000 }
+            ],
+            genshin: [
+                { denom: "60 Genesis Crystals", basePrice: 15000 },
+                { denom: "300 Genesis Crystals", basePrice: 65000 },
+                { denom: "980 Genesis Crystals", basePrice: 210000 },
+                { denom: "1980 Genesis Crystals", basePrice: 420000 },
+                { denom: "3280 Genesis Crystals", basePrice: 690000 },
+                { denom: "6480 Genesis Crystals", basePrice: 1350000 }
+            ],
+            roblox: [
+                { denom: "80 Robux", basePrice: 15000 },
+                { denom: "400 Robux", basePrice: 75000 },
+                { denom: "800 Robux", basePrice: 140000 },
+                { denom: "1700 Robux", basePrice: 290000 },
+                { denom: "4500 Robux", basePrice: 720000 },
+                { denom: "10000 Robux", basePrice: 1500000 }
+            ]
+        };
+
+        // Mengubah pilihan game
+        function changeGameType() {
+            renderDenoms(currentModalProduct);
+            const selectGame = document.getElementById('game-type-select').value;
+            const targetInput = document.getElementById('target-account');
+            const targetLabel = document.getElementById('target-account-label');
+
+            if (selectGame === 'mlbb') {
+                targetLabel.innerText = "ID User & ID Zone";
+                targetInput.placeholder = "Contoh: 12345678 (2012)";
+            } else if (selectGame === 'genshin') {
+                targetLabel.innerText = "UID & Server";
+                targetInput.placeholder = "Contoh: 801234567 (Asia)";
+            } else {
+                targetLabel.innerText = "Player ID / ID Karakter";
+                targetInput.placeholder = "Masukkan ID Akun Game";
+            }
+        }
+
+        // --- LAYANAN UTAMA & FORM PEMILIHAN NOMINAL ---
+        function openProductForm(serviceName, iconClass, colorTheme) {
+            currentModalProduct = serviceName;
+            currentPLNCustomer = null; // reset deteksi PLN
+            document.getElementById('product-modal-title').innerText = serviceName;
+            document.getElementById('product-modal-icon').className = `fa-solid ${iconClass}`;
+            document.getElementById('product-modal-icon-container').className = `modal-header-icon icon-${colorTheme}`;
+            
+            document.getElementById('target-account').value = '';
+            document.getElementById('target-note').value = '';
+            document.getElementById('pln-custom-name-input').value = '';
+            document.getElementById('detection-info-container').style.display = 'none';
+
+            const standardSelector = document.getElementById('standard-nominal-selector');
+            const customSelector = document.getElementById('custom-nominal-selector');
+            const gameSelector = document.getElementById('game-selector-container');
+            const plnCustomName = document.getElementById('pln-custom-name-container');
+
+            document.getElementById('target-account-label').innerText = "Nomor Tujuan / ID Pelanggan";
+            document.getElementById('target-account').placeholder = "Masukkan nomor HP atau ID";
+
+            if (serviceName === 'Bebas Nominal') {
+                standardSelector.style.display = 'none';
+                customSelector.style.display = 'block';
+                gameSelector.style.display = 'none';
+                plnCustomName.style.display = 'none';
+                document.getElementById('custom-amount-input').value = '';
+            } else if (serviceName === 'Voucher Game') {
+                standardSelector.style.display = 'block';
+                customSelector.style.display = 'none';
+                gameSelector.style.display = 'block';
+                plnCustomName.style.display = 'none';
+                changeGameType();
+            } else if (serviceName === 'PLN Token' || serviceName === 'Tagihan Bulanan') {
+                standardSelector.style.display = 'block';
+                customSelector.style.display = 'none';
+                gameSelector.style.display = 'none';
+                plnCustomName.style.display = 'block';
+                document.getElementById('target-account-label').innerText = "Nomor Meter / ID Pelanggan PLN";
+                document.getElementById('target-account').placeholder = "Contoh: 51234567890";
+                renderDenoms(serviceName);
+            } else {
+                standardSelector.style.display = 'block';
+                customSelector.style.display = 'none';
+                gameSelector.style.display = 'none';
+                plnCustomName.style.display = 'none';
+                renderDenoms(serviceName);
+            }
+
+            openModal('modal-product');
+        }
+
+        function renderDenoms(service) {
+            const grid = document.getElementById('product-denom-grid');
+            grid.innerHTML = '';
+
+            // Jika produk berupa Game Voucher
+            if (service === 'Voucher Game') {
+                const activeGame = document.getElementById('game-type-select').value;
+                const items = gameDenominations[activeGame] || [];
+                
+                items.forEach(item => {
+                    const markup = isAgentMode ? 1000 : 2000;
+                    const sellingPrice = item.basePrice + markup;
+
+                    const card = document.createElement('button');
+                    card.onclick = () => requestStandardQrisPayment(item.denom, sellingPrice);
+                    card.className = "denom-card";
+                    card.style.height = "auto";
+                    card.style.padding = "10px";
+                    card.innerHTML = `
+                        <h4 style="font-size: 11px; margin-bottom: 4px;">${item.denom}</h4>
+                        <p style="font-size: 8px;">Harga: <span style="font-size: 10px; font-weight: 800;">${formatRupiah(sellingPrice)}</span></p>
+                    `;
+                    grid.appendChild(card);
+                });
+                return;
+            }
+
+            // Varian Nominal Lengkap Mulai Dari 5.000 s/d 1.000.000
+            const basePrices = [
+                5000, 10000, 15000, 20000, 25000, 30000, 
+                40000, 50000, 75000, 100000, 150000, 200000, 300000, 500000, 1000000
+            ];
+            
+            basePrices.forEach(denom => {
+                const markup = isAgentMode ? 1000 : 2000;
+                const sellingPrice = denom + markup;
+
+                const card = document.createElement('button');
+                card.onclick = () => requestStandardQrisPayment(denom, sellingPrice);
+                card.className = "denom-card";
+                card.innerHTML = `
+                    <h4>${formatDenomName(denom)}</h4>
+                    <p>Harga: <span>${formatRupiah(sellingPrice)}</span></p>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        /* ==========================================================================
+           10. ALUR BARU: ALIRAN CHECKOUT DENGAN MENAMPILKAN QRIS PEMBAYARAN LANGSUNG
+           ========================================================================== */
+        
+        // Membuka Form Detail Scan QRIS sesaat setelah memilih nominal standar
+        function requestStandardQrisPayment(denom, finalPrice) {
+            const target = document.getElementById('target-account').value;
+            const note = document.getElementById('target-note').value;
+            
+            if (!target || target.trim().length < 4) {
+                alert("Masukkan ID atau No. HP tujuan yang valid!");
+                return;
+            }
+
+            // Re-evaluasi detail pelanggan PLN
+            if (currentModalProduct === 'PLN Token' || currentModalProduct === 'Tagihan Bulanan') {
+                const cleanVal = target.replace(/[^0-9]/g, '');
+                currentPLNCustomer = getPLNDetails(cleanVal);
+            }
+
+            let displayName = currentModalProduct;
+            if (currentModalProduct === 'Voucher Game') {
+                const gameName = document.getElementById('game-type-select').options[document.getElementById('game-type-select').selectedIndex].text;
+                displayName = "Top Up " + gameName + " (" + denom + ")";
+            } else if (typeof denom === 'number') {
+                displayName = currentModalProduct + " " + formatDenomName(denom);
+            } else {
+                displayName = currentModalProduct + " " + denom;
+            }
+
+            // Simpan transaksi di penangguhan
+            pendingTransaction = {
+                service: displayName,
+                target: target,
+                price: finalPrice,
+                note: note,
+                isPln: (currentModalProduct === 'PLN Token' || currentModalProduct === 'Tagihan Bulanan') && currentPLNCustomer != null,
+                plnDetails: currentPLNCustomer
+            };
+
+            // Isi rincian ke Modal Pembayaran QRIS
+            document.getElementById('pay-qris-product').innerText = pendingTransaction.service;
+            document.getElementById('pay-qris-target').innerText = pendingTransaction.target;
+            document.getElementById('pay-qris-price').innerText = formatRupiah(pendingTransaction.price);
+
+            const plnRow = document.getElementById('pay-qris-pln-row');
+            if (pendingTransaction.isPln) {
+                plnRow.style.display = 'flex';
+                document.getElementById('pay-qris-pln-name').innerText = pendingTransaction.plnDetails.name;
+            } else {
+                plnRow.style.display = 'none';
+            }
+
+            closeModal('modal-product');
+            openModal('modal-pay-qris');
+        }
+
+        // Membuka Form Detail Scan QRIS sesaat setelah input Bebas Nominal
+        function requestCustomQrisPayment() {
+            const target = document.getElementById('target-account').value;
+            const amount = parseInt(document.getElementById('custom-amount-input').value);
+            const note = document.getElementById('target-note').value;
+
+            if (!target || target.trim().length < 4) {
+                alert("Masukkan nomor tujuan yang valid!");
+                return;
+            }
+            if (!amount || amount < 5000) {
+                alert("Minimal pembayaran Bebas Nominal adalah Rp 5.000!");
+                return;
+            }
+
+            const fee = isAgentMode ? 1000 : 2000;
+            const total = amount + fee;
+
+            pendingTransaction = {
+                service: currentModalProduct,
+                target: target,
+                price: total,
+                note: note,
+                isPln: false,
+                plnDetails: null
+            };
+
+            // Isi rincian ke Modal Pembayaran QRIS
+            document.getElementById('pay-qris-product').innerText = pendingTransaction.service;
+            document.getElementById('pay-qris-target').innerText = pendingTransaction.target;
+            document.getElementById('pay-qris-price').innerText = formatRupiah(pendingTransaction.price);
+            document.getElementById('pay-qris-pln-row').style.display = 'none';
+
+            closeModal('modal-product');
+            openModal('modal-pay-qris');
+        }
+
+        // Mengeksekusi pembayaran setelah user menekan tombol "Saya Sudah Bayar"
+        function executeProductPayment() {
+            if (!pendingTransaction) return;
+
+            // Jika saldo demo tidak cukup, otomatis isi ulang agar demo tetap lancar
+            if (balance < pendingTransaction.price) {
+                balance += (pendingTransaction.price + 500000);
+                document.getElementById('app-balance-display').innerText = formatRupiah(balance);
+            }
+
+            closeModal('modal-pay-qris');
+            openModal('modal-processing');
+
+            setTimeout(() => {
+                balance -= pendingTransaction.price;
+                document.getElementById('app-balance-display').innerText = formatRupiah(balance);
+                
+                closeModal('modal-processing');
+
+                // Jika PLN diaktifkan, atur target pelanggan
+                if (pendingTransaction.isPln) {
+                    currentPLNCustomer = pendingTransaction.plnDetails;
+                } else {
+                    currentPLNCustomer = null;
+                }
+                
+                // Buat struk & rekam riwayat
+                generateReceipt(pendingTransaction.service, pendingTransaction.target, pendingTransaction.price, pendingTransaction.note);
+                
+                let histTarget = pendingTransaction.target;
+                if (pendingTransaction.isPln) {
+                    histTarget += ` (${pendingTransaction.plnDetails.name})`;
+                }
+                appendTransactionToHistory(pendingTransaction.service, histTarget, pendingTransaction.price, true, pendingTransaction.note);
+
+                // Reset state penangguhan
+                pendingTransaction = null;
+            }, 1800);
+        }
+
+        // --- TOP UP SALDO QRIS (MANUAL DI CARD SALDO) ---
+        function selectTopupAmount(amount) {
+            selectedTopupAmount = amount;
+            document.getElementById('qris-target-price').innerText = formatRupiah(amount);
+            document.getElementById('topup-step-selection').style.display = 'none';
+            document.getElementById('topup-step-qris').style.display = 'block';
+        }
+
+        function resetTopupFlow() {
+            document.getElementById('topup-step-selection').style.display = 'block';
+            document.getElementById('topup-step-qris').style.display = 'none';
+        }
+
+        function confirmQrisDeposit() {
+            closeModal('modal-topup');
+            openModal('modal-processing');
+
+            setTimeout(() => {
+                balance += selectedTopupAmount;
+                document.getElementById('app-balance-display').innerText = formatRupiah(balance);
+                
+                closeModal('modal-processing');
+                resetTopupFlow();
+                
+                alert("Pembayaran Terverifikasi! Saldo otomatis ditambahkan: " + formatRupiah(selectedTopupAmount));
+                appendTransactionToHistory("Top Up Saldo QRIS", "Deposit Instant", selectedTopupAmount, false, "Isi Saldo Mandiri");
+            }, 2000);
+        }
+
+        // --- SISTEM TARIK DANA (WITHDRAW) ---
+        function adaptWithdrawDestinations() {
+            const type = document.getElementById('withdraw-type').value;
+            const destSelect = document.getElementById('withdraw-destination');
+            destSelect.innerHTML = '';
+
+            const items = type === 'bank' 
+                ? ['BCA', 'Mandiri', 'BRI', 'BNI', 'CIMB Niaga']
+                : ['DANA', 'OVO', 'GoPay', 'ShopeePay'];
+
+            items.forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.innerText = val;
+                destSelect.appendChild(opt);
+            });
+        }
+
+        function executeWithdrawAction() {
+            const dest = document.getElementById('withdraw-destination').value;
+            const num = document.getElementById('withdraw-account-num').value;
+            const amount = parseInt(document.getElementById('withdraw-amount-num').value);
+
+            if (!num || num.trim().length < 5) {
+                alert("Harap isi nomor rekening atau nomor HP yang valid!");
+                return;
+            }
+            if (!amount || amount < 10000) {
+                alert("Batas penarikan dana minimal Rp 10.000!");
+                return;
+            }
+
+            const fee = isAgentMode ? 1000 : 3500;
+            const totalDeduction = amount + fee;
+
+            if (balance < totalDeduction) {
+                alert(`Saldo tidak mencukupi! Anda harus memiliki saldo minimal ${formatRupiah(totalDeduction)} (termasuk biaya admin ${formatRupiah(fee)})`);
+                return;
+            }
+
+            closeModal('modal-withdraw');
+            openModal('modal-processing');
+
+            setTimeout(() => {
+                balance -= totalDeduction;
+                document.getElementById('app-balance-display').innerText = formatRupiah(balance);
+                
+                closeModal('modal-processing');
+                
+                // Reset form penarikan
+                document.getElementById('withdraw-account-num').value = '';
+                document.getElementById('withdraw-amount-num').value = '';
+                
+                generateReceipt(`Tarik Dana ke ${dest}`, num, amount, "Penarikan Dana Sukses");
+                appendTransactionToHistory(`Penarikan ke ${dest}`, num, amount, true, "Penarikan Rekening");
+            }, 2500);
+        }
+
+        // --- STRUK GENERATOR ---
+        function generateReceipt(service, target, price, note) {
+            document.getElementById('rec-service').innerText = service;
+            document.getElementById('rec-target').innerText = target;
+            document.getElementById('rec-note').innerText = note ? note : "-";
+            document.getElementById('rec-sn').innerText = "SN-" + Math.floor(10000000 + Math.random() * 90000000);
+            document.getElementById('rec-time').innerText = new Date().toLocaleString('id-ID', { hour12: false });
+            document.getElementById('rec-price').innerText = formatRupiah(price);
+            
+            // Konfigurasi struk PLN jika terdeteksi
+            const plnNameRow = document.getElementById('rec-pln-name');
+            const plnPowerRow = document.getElementById('rec-pln-power');
+            
+            if (currentPLNCustomer) {
+                plnNameRow.style.display = 'flex';
+                plnPowerRow.style.display = 'flex';
+                document.getElementById('rec-pln-name').innerText = currentPLNCustomer.name;
+                document.getElementById('rec-pln-power').innerText = currentPLNCustomer.power;
+            } else {
+                plnNameRow.style.display = 'none';
+                plnPowerRow.style.display = 'none';
+            }
+            
+            openModal('modal-receipt');
+        }
+
+        // --- RIWAYAT FEED MANAGER ---
+        function appendTransactionToHistory(service, target, price, isDeduct, note) {
+            const feed = document.getElementById('history-feed');
+            const emptyState = document.getElementById('empty-history-state');
+            
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = "history-item";
+
+            const accentColor = isDeduct ? "deduct" : "add";
+            const symbol = isDeduct ? "-" : "+";
+            const icon = isDeduct ? "fa-file-invoice" : "fa-circle-arrow-down";
+            const iconColor = isDeduct ? "icon-rose" : "icon-emerald";
+
+            const noteHtml = note ? `<br><span class="item-note-label"><i class="fa-solid fa-pen-clip"></i> Catatan: ${note}</span>` : '';
+
+            wrapper.innerHTML = `
+                <div class="item-left">
+                    <div class="item-icon ${iconColor}">
+                        <i class="fa-solid ${icon}"></i>
+                    </div>
+                    <div class="item-info">
+                        <h4>${service}</h4>
+                        <p>${target}${noteHtml}</p>
+                    </div>
+                </div>
+                <div class="item-right">
+                    <span class="item-amount ${accentColor}">${symbol}${formatRupiah(price)}</span>
+                    <span class="item-badge">SUKSES</span>
+                </div>
+            `;
+            feed.insertBefore(wrapper, feed.firstChild);
+        }
+
+        function clearAllTransactions() {
+            const feed = document.getElementById('history-feed');
+            feed.innerHTML = `
+                <div id="empty-history-state" class="empty-state">
+                    <i class="fa-solid fa-receipt"></i>
+                    <p>Belum ada riwayat transaksi.</p>
+                </div>
+            `;
+            alert("Seluruh riwayat transaksi simulasi telah dibersihkan.");
+        }
+
+        // --- GEMINI AI INTEGRASI ---
+        function saveConfigurations() {
+            systemApiKey = document.getElementById('custom-api-key-input').value;
+            alert("Konfigurasi sistem berhasil diperbarui!");
+            closeModal('modal-settings');
+        }
+
+        function sendQuickAiQuery(queryText) {
+            openModal('modal-ai-console');
+            const chatFeed = document.getElementById('ai-chat-feed');
+            appendUserMessage(queryText);
+            fetchAiResponse(queryText);
+        }
+
+        function submitAiQuery() {
+            const input = document.getElementById('ai-mini-input');
+            const val = input.value;
+            if (!val || val.trim().length === 0) return;
+            
+            input.value = '';
+            openModal('modal-ai-console');
+            appendUserMessage(val);
+            fetchAiResponse(val);
+        }
+
+        function submitConsoleAiQuery() {
+            const input = document.getElementById('ai-chat-input');
+            const val = input.value;
+            if (!val || val.trim().length === 0) return;
+
+            input.value = '';
+            appendUserMessage(val);
+            fetchAiResponse(val);
+        }
+
+        function appendUserMessage(text) {
+            const chatFeed = document.getElementById('ai-chat-feed');
+            const bubble = document.createElement('div');
+            bubble.className = "chat-bubble user";
+            bubble.innerHTML = `
+                <div class="chat-avatar user"><i class="fa-solid fa-user"></i></div>
+                <div class="chat-text">${text}</div>
+            `;
+            chatFeed.appendChild(bubble);
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+        }
+
+        async function fetchAiResponse(text) {
+            const chatFeed = document.getElementById('ai-chat-feed');
+            const loaderBubble = document.createElement('div');
+            loaderBubble.className = "chat-bubble bot";
+            loaderBubble.innerHTML = `
+                <div class="chat-avatar bot"><i class="fa-solid fa-robot"></i></div>
+                <div id="ai-loading-indicator" class="chat-text" style="color: #94a3b8; font-style: italic;">
+                    AI sedang menyusun saran bisnis...
+                </div>
+            `;
+            chatFeed.appendChild(loaderBubble);
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+
+            if (systemApiKey && systemApiKey.trim() !== "") {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${systemApiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: text }] }],
+                    systemInstruction: { parts: [{ text: "Anda adalah asisten PPOB dan konsultan agen jualan pulsa profesional. Berikan respon ramah, cerdas, dan dalam Bahasa Indonesia." }] }
+                };
+
+                const executeRequest = async (retries = 5, delay = 1000) => {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!response.ok) throw new Error("Gagal mengambil data.");
+                        const data = await response.json();
+                        const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, sistem tidak menerima jawaban yang jelas.";
+                        displayAiResponse(answer, loaderBubble);
+                    } catch (err) {
+                        if (retries > 0) {
+                            setTimeout(() => executeRequest(retries - 1, delay * 2), delay);
+                        } else {
+                            displayAiResponse("Koneksi API Gemini gagal setelah beberapa percobaan. Pastikan API key Anda valid.", loaderBubble);
+                        }
+                    }
+                };
+                executeRequest();
+            } else {
+                // Demo Fallback
+                setTimeout(() => {
+                    let demoResponse = "Untuk memaksimalkan laba jualan, Anda bisa mengaktifkan Mode Agen dan membuat promosi menarik seperti diskon di hari gajian!";
+                    if (text.toLowerCase().includes("profit") || text.toLowerCase().includes("laba")) {
+                        demoResponse = "Tips Profit: 1. Fokus jualan Token PLN dan E-wallet karena perputarannya cepat. 2. Naikkan harga markup untuk pelanggan umum sebesar Rp 1.500 s/d Rp 2.000. 3. Berikan diskon tipis khusus pelanggan setia!";
+                    } else if (text.toLowerCase().includes("caption") || text.toLowerCase().includes("promo")) {
+                        demoResponse = "Contoh Status WA: 📱 TOKEN PLN MURAH & CEPAT! ⚡ Ga perlu keluar rumah, tinggal kirim ID Meteran langsung nyala. Pembayaran bebas tanpa biaya ribet! Hubungi saya sekarang ya! 😉";
+                    }
+                    displayAiResponse(demoResponse, loaderBubble);
+                }, 1500);
+            }
+        }
+
+        function displayAiResponse(response, loaderBubble) {
+            const chatFeed = document.getElementById('ai-chat-feed');
+            if (loaderBubble) {
+                loaderBubble.remove();
+            }
+
+            const bubble = document.createElement('div');
+            bubble.className = "chat-bubble bot";
+            bubble.innerHTML = `
+                <div class="chat-avatar bot"><i class="fa-solid fa-robot"></i></div>
+                <div class="chat-text">${response}</div>
+            `;
+            chatFeed.appendChild(bubble);
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+        }
+
+        // --- SWITCH TAB ---
+        function changeTab(tabName) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (tabName === 'home') {
+                document.getElementById('tab-home').classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
